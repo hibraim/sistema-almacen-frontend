@@ -113,10 +113,10 @@ export default function App() {
     setLoading(true);
     try {
       const [resA, resC, resP, resM] = await Promise.all([
-        axios.get('http://localhost:8000/api/v1/areas').catch(() => null),
-        axios.get('http://localhost:8000/api/v1/categorias').catch(() => null),
-        axios.get('http://localhost:8000/api/v1/productos').catch(() => null),
-        axios.get('http://localhost:8000/api/v1/movimientos').catch(() => null)
+        axios.get('https://sistema-almacen-backend.onrender.com/api/v1/areas').catch(() => null),
+        axios.get('https://sistema-almacen-backend.onrender.com/api/v1/categorias').catch(() => null),
+        axios.get('https://sistema-almacen-backend.onrender.com/api/v1/productos').catch(() => null),
+        axios.get('https://sistema-almacen-backend.onrender.com/api/v1/movimientos').catch(() => null)
       ]);
 
       const listAreas = resA?.data?.data || [];
@@ -156,7 +156,7 @@ export default function App() {
   const handleLimpiarKardex = async () => {
     if (confirm("⚠️ ¿Estás seguro de limpiar todo el Kárdex y movimientos de prueba? Esta acción dejará el sistema listo para operación real.")) {
       try {
-        const res = await axios.delete('http://localhost:8000/api/v1/movimientos/limpiar');
+        const res = await axios.delete('https://sistema-almacen-backend.onrender.com/api/v1/movimientos/limpiar');
         alert(`✨ ${res.data.message}`);
         cargarDatos();
       } catch (err) {
@@ -176,7 +176,7 @@ export default function App() {
     if (formNuevoArticulo.imagen) formData.append('imagen', formNuevoArticulo.imagen);
 
     try {
-      const res = await axios.post('http://localhost:8000/api/v1/articulos-catalogo', formData, {
+      const res = await axios.post('https://sistema-almacen-backend.onrender.com/api/v1/articulos-catalogo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert(`✨ ${res.data.message}`);
@@ -205,7 +205,7 @@ export default function App() {
     }
 
     try {
-      const res = await axios.post('http://localhost:8000/api/v1/productos', formData, {
+      const res = await axios.post('https://sistema-almacen-backend.onrender.com/api/v1/productos', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert(`✨ ${res.data.message}`);
@@ -220,7 +220,7 @@ export default function App() {
     e.preventDefault();
     if (!prodEditar) return;
     try {
-      await axios.put(`http://localhost:8000/api/v1/productos/${prodEditar.id}`, {
+      await axios.put(`https://sistema-almacen-backend.onrender.com/api/v1/productos/${prodEditar.id}`, {
         codigo_interno: prodEditar.codigo_interno,
         nombre: prodEditar.nombre,
         stock_actual: prodEditar.stock_actual,
@@ -235,7 +235,7 @@ export default function App() {
 
   const handleEliminarProducto = async (id: string, nombre: string) => {
     if (confirm(`¿Eliminar artículo "${nombre}"?`)) {
-      try { await axios.delete(`http://localhost:8000/api/v1/productos/${id}`); cargarDatos(); } catch (err) { alert("Error al eliminar"); }
+      try { await axios.delete(`https://sistema-almacen-backend.onrender.com/api/v1/productos/${id}`); cargarDatos(); } catch (err) { alert("Error al eliminar"); }
     }
   };
 
@@ -243,10 +243,10 @@ export default function App() {
     e.preventDefault();
     try {
       if (catEditar) {
-        await axios.put(`http://localhost:8000/api/v1/categorias/${catEditar.id}`, formCat);
+        await axios.put(`https://sistema-almacen-backend.onrender.com/api/v1/categorias/${catEditar.id}`, formCat);
         alert("✨ Categoría actualizada");
       } else {
-        await axios.post('http://localhost:8000/api/v1/categorias', formCat);
+        await axios.post('https://sistema-almacen-backend.onrender.com/api/v1/categorias', formCat);
         alert("✨ Categoría creada");
       }
       setModalCatOpen(false);
@@ -258,14 +258,14 @@ export default function App() {
 
   const handleEliminarCategoria = async (id: number, nombre: string) => {
     if (confirm(`¿Eliminar categoría "${nombre}"?`)) {
-      try { await axios.delete(`http://localhost:8000/api/v1/categorias/${id}`); cargarDatos(); } catch (e) { alert("En uso"); }
+      try { await axios.delete(`https://sistema-almacen-backend.onrender.com/api/v1/categorias/${id}`); cargarDatos(); } catch (e) { alert("En uso"); }
     }
   };
 
   const handleGuardarArea = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:8000/api/v1/areas', formArea);
+      await axios.post('https://sistema-almacen-backend.onrender.com/api/v1/areas', formArea);
       alert("✨ Área creada");
       setModalAreaOpen(false);
       setFormArea({ nombre: '', encargado: '', cargo: '' });
@@ -275,7 +275,7 @@ export default function App() {
 
   const handleEliminarArea = async (id: number, nombre: string) => {
     if (confirm(`¿Eliminar área "${nombre}"?`)) {
-      try { await axios.delete(`http://localhost:8000/api/v1/areas/${id}`); cargarDatos(); } catch (e) {}
+      try { await axios.delete(`https://sistema-almacen-backend.onrender.com/api/v1/areas/${id}`); cargarDatos(); } catch (e) {}
     }
   };
 
@@ -283,7 +283,7 @@ export default function App() {
     e.preventDefault();
     if (!modalSubAreaOpen) return;
     try {
-      await axios.post('http://localhost:8000/api/v1/subareas', { ...formSubArea, area_id: modalSubAreaOpen });
+      await axios.post('https://sistema-almacen-backend.onrender.com/api/v1/subareas', { ...formSubArea, area_id: modalSubAreaOpen });
       alert("✨ Sub-área creada");
       setModalSubAreaOpen(null);
       setFormSubArea({ nombre: '', encargado: '', cargo: '' });
@@ -293,7 +293,7 @@ export default function App() {
 
   const handleEliminarSubArea = async (id: number, nombre: string) => {
     if (confirm(`¿Eliminar sub-área "${nombre}"?`)) {
-      try { await axios.delete(`http://localhost:8000/api/v1/subareas/${id}`); cargarDatos(); } catch (e) {}
+      try { await axios.delete(`https://sistema-almacen-backend.onrender.com/api/v1/subareas/${id}`); cargarDatos(); } catch (e) {}
     }
   };
 
@@ -314,7 +314,7 @@ export default function App() {
         recibio_nombre: formSalida.recibio_nombre,
         entrego_nombre: formSalida.entrego_nombre
       };
-      await axios.post('http://localhost:8000/api/v1/salidas', payload);
+      await axios.post('https://sistema-almacen-backend.onrender.com/api/v1/salidas', payload);
       alert("✨ Salida procesada con éxito");
       setModalSalidaOpen(false);
       setFormSalida({ 
@@ -453,7 +453,7 @@ export default function App() {
             </div>
 
             <a 
-              href={`http://localhost:8000/api/v1/reportes/excel?area=${encodeURIComponent(areaReporte)}`} 
+              href={`https://sistema-almacen-backend.onrender.com/api/v1/reportes/excel?area=${encodeURIComponent(areaReporte)}`} 
               target="_blank" 
               rel="noreferrer" 
               className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-xl transition shadow-sm"
@@ -463,7 +463,7 @@ export default function App() {
             </a>
             
             <a 
-              href={`http://localhost:8000/api/v1/reportes/pdf?area=${encodeURIComponent(areaReporte)}`} 
+              href={`https://sistema-almacen-backend.onrender.com/api/v1/reportes/pdf?area=${encodeURIComponent(areaReporte)}`} 
               target="_blank" 
               rel="noreferrer" 
               className="flex items-center gap-1.5 text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3 py-2 rounded-xl transition shadow-sm"
@@ -525,7 +525,7 @@ export default function App() {
                           className="relative h-28 bg-slate-100 border-b border-slate-100 flex items-center justify-center overflow-hidden cursor-pointer group"
                         >
                           {p.imagen_principal ? (
-                            <img src={`http://localhost:8000${p.imagen_principal}`} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                            <img src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
                           ) : (
                             <div className="flex flex-col items-center justify-center text-slate-400 space-y-1">
                               <ImageIcon className="w-7 h-7 opacity-40" />
@@ -609,7 +609,7 @@ export default function App() {
                           <tr key={p.id} className="hover:bg-slate-50/80 transition duration-150">
                             <td className="px-4 py-3 text-center">
                               {p.imagen_principal ? (
-                                <img onClick={() => setProductoZoom(p)} src={`http://localhost:8000${p.imagen_principal}`} alt={p.nombre} className="w-10 h-10 object-cover rounded-xl border border-slate-200 mx-auto shadow-xs cursor-pointer hover:scale-110 transition" title="Ver foto" />
+                                <img onClick={() => setProductoZoom(p)} src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-10 h-10 object-cover rounded-xl border border-slate-200 mx-auto shadow-xs cursor-pointer hover:scale-110 transition" title="Ver foto" />
                               ) : (
                                 <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 mx-auto border border-slate-200">
                                   <ImageIcon className="w-4 h-4" />
@@ -690,7 +690,7 @@ export default function App() {
                         <tr key={p.id} className="hover:bg-slate-50">
                           <td className="px-4 py-2 text-center">
                             {p.imagen_principal ? (
-                              <img onClick={() => setProductoZoom(p)} src={`http://localhost:8000${p.imagen_principal}`} alt={p.nombre} className="w-9 h-9 object-cover rounded-xl border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition" title="Ver foto" />
+                              <img onClick={() => setProductoZoom(p)} src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-9 h-9 object-cover rounded-xl border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition" title="Ver foto" />
                             ) : (
                               <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 mx-auto border"><ImageIcon className="w-3.5 h-3.5" /></div>
                             )}
@@ -855,7 +855,7 @@ export default function App() {
             {/* FOTO EN GRANDE (TAMAÑO MODERADO) */}
             <div className="relative h-56 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
               {productoZoom.imagen_principal ? (
-                <img src={`http://localhost:8000${productoZoom.imagen_principal}`} alt={productoZoom.nombre} className="w-full h-full object-cover" />
+                <img src={`https://sistema-almacen-backend.onrender.com${productoZoom.imagen_principal}`} alt={productoZoom.nombre} className="w-full h-full object-cover" />
               ) : (
                 <div className="flex flex-col items-center justify-center text-slate-400 space-y-1">
                   <ImageIcon className="w-10 h-10 opacity-40" />
