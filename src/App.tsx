@@ -92,7 +92,7 @@ export default function App() {
 
   const [formSalida, setFormSalida] = useState({
     folio: '', 
-    area_id: '', // En blanco por defecto como solicitaste
+    area_id: '', 
     subarea_id: '', 
     producto_id: '', 
     producto_nombre_seleccionado: '',
@@ -242,8 +242,11 @@ export default function App() {
   const prodsFiltrados = productos.map(p => {
     const query = busqueda.toLowerCase().trim();
 
-    if (areaReporte !== 'TODAS') {
-      const tieneArea = p.distribucion_areas && p.distribucion_areas[areaReporte] > 0;
+    if (areaReporte && areaReporte !== 'TODAS') {
+      const distribucion = p.distribucion_areas || {};
+      const tieneArea = Object.entries(distribucion).some(([areaName, cant]) => 
+        areaName.toLowerCase().trim() === areaReporte.toLowerCase().trim() && Number(cant) > 0
+      );
       if (!tieneArea) return null;
     }
 
@@ -254,16 +257,6 @@ export default function App() {
     const categoriaMatch = p.categoria_nombre.toLowerCase().includes(query);
 
     if (nombreMatch || codigoMatch || categoriaMatch) return p;
-
-    if (p.distribucion_areas) {
-      let coincideAreaQuery = false;
-      for (const [areaName] of Object.entries(p.distribucion_areas)) {
-        if (areaName.toLowerCase().includes(query)) {
-          coincideAreaQuery = true;
-        }
-      }
-      if (coincideAreaQuery) return p;
-    }
 
     return null;
   }).filter(Boolean) as Producto[];
