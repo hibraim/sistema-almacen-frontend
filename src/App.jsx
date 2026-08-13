@@ -31,7 +31,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'catalogo' | 'movimientos' | 'areas' | 'categorias'>('dashboard');
   const [vistaModo, setVistaModo] = useState<'tarjetas' | 'tabla'>('tarjetas');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+   
   const [paginaActual, setPaginaActual] = useState(1);
   const elementosPorPagina = 24;
 
@@ -44,7 +44,7 @@ export default function App() {
 
   const [areaReporte, setAreaReporte] = useState('TODAS');
 
-  // Estado para el Pop-Up de Imagen / Detalle Chicho
+  // Estado para el Pop-Up de Imagen
   const [productoZoom, setProductoZoom] = useState<Producto | null>(null);
 
   // Autocompletado para Entradas
@@ -62,16 +62,16 @@ export default function App() {
   const [modalNuevoArticuloOpen, setModalNuevoArticuloOpen] = useState(false);
   const [modalSalidaOpen, setModalSalidaOpen] = useState(false);
   const [modalEditOpen, setModalEditOpen] = useState(false);
-  
+   
   const [modalAreaOpen, setModalAreaOpen] = useState(false);
   const [modalSubAreaOpen, setModalSubAreaOpen] = useState<number | null>(null);
-  
+   
   const [modalCatOpen, setModalCatOpen] = useState(false);
   const [catEditar, setCatEditar] = useState<Categoria | null>(null);
 
   const [prodEditar, setProdEditar] = useState<Producto | null>(null);
 
-  // Formularios
+  // Formularios con valores iniciales limpios (en blanco / 0)
   const [formNuevoArticulo, setFormNuevoArticulo] = useState({
     codigo_interno: '',
     nombre: '',
@@ -85,9 +85,9 @@ export default function App() {
     codigo_interno: '', 
     nombre: '', 
     categoria_id: '1', 
-    cantidad: 1, 
+    cantidad: 0, 
     unidad_medida: 'Pieza',
-    area_id: '',
+    area_id: '', // En blanco hasta que se seleccione
     proveedor: '', 
     recibio: usuario?.nombre || '',
     imagen: null as File | null 
@@ -99,11 +99,11 @@ export default function App() {
 
   const [formSalida, setFormSalida] = useState({
     folio: '', 
-    area_id: '', 
+    area_id: '', // En blanco hasta que se seleccione
     subarea_id: '', 
     producto_id: '', 
     producto_nombre_seleccionado: '',
-    cantidad: 1, 
+    cantidad: 0, 
     destino_uso: '', 
     recibio_nombre: '', 
     entrego_nombre: usuario?.nombre || ''
@@ -122,15 +122,10 @@ export default function App() {
       const listAreas = resA?.data?.data || [];
       setAreas(listAreas);
       if (resC?.data?.data) setCategorias(resC.data.data);
-      
+       
       const prods = resP?.data?.data || [];
       setProductos(prods);
       setMovimientos(resM?.data?.data || []);
-
-      if (listAreas.length > 0) {
-        setFormSalida(prev => ({ ...prev, area_id: String(listAreas[0].id) }));
-        setFormEntrada(prev => ({ ...prev, area_id: String(listAreas[0].id) }));
-      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -188,6 +183,10 @@ export default function App() {
 
   const handleGuardarEntrada = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formEntrada.area_id) {
+      alert("⚠️ Por favor selecciona un Departamento / Área.");
+      return;
+    }
     const formData = new FormData();
     formData.append('codigo_interno', formEntrada.codigo_interno || `SPM-${Date.now().toString().slice(-4)}`);
     formData.append('nombre', formEntrada.nombre);
@@ -199,7 +198,7 @@ export default function App() {
     formData.append('area_id', formEntrada.area_id);
     formData.append('proveedor', formEntrada.proveedor || 'Proveedor General');
     formData.append('recibio', formEntrada.recibio);
-    
+     
     if (formEntrada.imagen) {
       formData.append('imagen', formEntrada.imagen);
     }
@@ -210,7 +209,7 @@ export default function App() {
       });
       alert(`✨ ${res.data.message}`);
       setModalEntradaOpen(false);
-      setFormEntrada({ codigo_interno: '', nombre: '', categoria_id: '1', cantidad: 1, unidad_medida: 'Pieza', area_id: areas[0]?.id ? String(areas[0].id) : '', proveedor: '', recibio: usuario?.nombre || '', imagen: null });
+      setFormEntrada({ codigo_interno: '', nombre: '', categoria_id: '1', cantidad: 0, unidad_medida: 'Pieza', area_id: '', proveedor: '', recibio: usuario?.nombre || '', imagen: null });
       setBusquedaEntrada('');
       cargarDatos();
     } catch (err) { alert("Error al registrar la entrada"); }
@@ -299,6 +298,10 @@ export default function App() {
 
   const handleRegistrarSalida = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formSalida.area_id) {
+      alert("⚠️ Selecciona la Dirección / Área solicitante.");
+      return;
+    }
     if (!formSalida.producto_id) {
       alert("⚠️ Selecciona un artículo válido.");
       return;
@@ -319,11 +322,11 @@ export default function App() {
       setModalSalidaOpen(false);
       setFormSalida({ 
         folio: '', 
-        area_id: areas[0]?.id ? String(areas[0].id) : '', 
+        area_id: '', 
         subarea_id: '', 
         producto_id: '', 
         producto_nombre_seleccionado: '',
-        cantidad: 1, 
+        cantidad: 0, 
         destino_uso: '', 
         recibio_nombre: '', 
         entrego_nombre: usuario?.nombre || '' 
@@ -333,7 +336,6 @@ export default function App() {
     } catch (err: any) { alert(err.response?.data?.detail || "Error en salida"); }
   };
 
-  // Filtrado optimizado
   const prodsFiltrados = productos.map(p => {
     const query = busqueda.toLowerCase().trim();
     if (!query) return p;
@@ -380,7 +382,7 @@ export default function App() {
   return (
     <div className="flex h-screen bg-slate-100 text-slate-800 font-sans overflow-hidden">
       
-      {/* SIDEBAR RESPONSIVO */}
+      {/* SIDEBAR */}
       <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col justify-between transition-transform duration-300 shadow-xl md:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div>
           <div className="p-5 border-b border-slate-200 flex items-center justify-between">
@@ -432,7 +434,6 @@ export default function App() {
       {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-slate-50">
         
-        {/* HEADER RESPONSIVO */}
         <header className="border-b border-slate-200 bg-white px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-3 shrink-0 shadow-xs flex-wrap">
           <div className="flex items-center gap-3 flex-1 min-w-[200px] max-w-lg">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 bg-slate-100 rounded-xl text-slate-700 hover:bg-slate-200"><Menu className="w-5 h-5" /></button>
@@ -443,7 +444,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            
             <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs">
               <span className="text-[10px] font-bold text-slate-500 uppercase hidden sm:inline">Área:</span>
               <select value={areaReporte} onChange={e => setAreaReporte(e.target.value)} className="bg-transparent font-bold text-slate-800 outline-none cursor-pointer">
@@ -452,23 +452,11 @@ export default function App() {
               </select>
             </div>
 
-            <a 
-              href={`https://sistema-almacen-backend.onrender.com/api/v1/reportes/excel?area=${encodeURIComponent(areaReporte)}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-xl transition shadow-sm"
-              title="Descargar Excel"
-            >
+            <a href={`https://sistema-almacen-backend.onrender.com/api/v1/reportes/excel?area=${encodeURIComponent(areaReporte)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-xl transition shadow-sm" title="Descargar Excel">
               <FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">Excel</span>
             </a>
             
-            <a 
-              href={`https://sistema-almacen-backend.onrender.com/api/v1/reportes/pdf?area=${encodeURIComponent(areaReporte)}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="flex items-center gap-1.5 text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3 py-2 rounded-xl transition shadow-sm"
-              title="Descargar PDF"
-            >
+            <a href={`https://sistema-almacen-backend.onrender.com/api/v1/reportes/pdf?area=${encodeURIComponent(areaReporte)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3 py-2 rounded-xl transition shadow-sm" title="Descargar PDF">
               <FileText className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
             </a>
 
@@ -481,13 +469,10 @@ export default function App() {
           </div>
         </header>
 
-        {/* ÁREA DE TRABAJO */}
         <main className="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto">
           
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              
-              {/* Selector de Vista & Contador de Artículos */}
               <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex-wrap gap-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-blue-600" />
@@ -496,34 +481,22 @@ export default function App() {
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setVistaModo('tarjetas')} 
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${vistaModo === 'tarjetas' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                  >
+                  <button onClick={() => setVistaModo('tarjetas')} className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${vistaModo === 'tarjetas' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                     <LayoutGrid className="w-3.5 h-3.5" /> Fichas
                   </button>
-                  <button 
-                    onClick={() => setVistaModo('tabla')} 
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${vistaModo === 'tabla' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                  >
+                  <button onClick={() => setVistaModo('tabla')} className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${vistaModo === 'tabla' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                     <TableIcon className="w-3.5 h-3.5" /> Tabla
                   </button>
                   <button onClick={cargarDatos} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition ml-2"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
                 </div>
               </div>
 
-              {/* VISTA 1: FICHAS CUADRICULADAS COMPACTAS CON ZOOM EN IMAGEN */}
               {vistaModo === 'tarjetas' ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                   {prodsPaginados.map((p) => (
                     <div key={p.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
                       <div>
-                        {/* FOTO COMPACTA CLICKEABLE */}
-                        <div 
-                          onClick={() => setProductoZoom(p)}
-                          title="Clic para ver detalle"
-                          className="relative h-28 bg-slate-100 border-b border-slate-100 flex items-center justify-center overflow-hidden cursor-pointer group"
-                        >
+                        <div onClick={() => setProductoZoom(p)} title="Clic para ver detalle" className="relative h-28 bg-slate-100 border-b border-slate-100 flex items-center justify-center overflow-hidden cursor-pointer group">
                           {p.imagen_principal ? (
                             <img src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
                           ) : (
@@ -540,48 +513,27 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* DATOS DE LA FICHA */}
                         <div className="p-3 space-y-2">
                           <h3 className="text-xs font-bold text-slate-900 line-clamp-2 leading-tight">{p.nombre}</h3>
                           
-                          {/* STOCK */}
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-slate-400 font-medium uppercase text-[9px]">Stock:</span>
                             <span className={`font-black px-2 py-0.5 rounded text-[10px] ${p.stock_actual > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                               {p.stock_actual} {p.unidad_medida}
                             </span>
                           </div>
-
-                          {/* ÁREAS ASIGNADAS (COMPACTO) */}
-                          <div className="space-y-0.5">
-                            {p.distribucion_areas && Object.keys(p.distribucion_areas).length > 0 ? (
-                              <div className="flex flex-wrap gap-1 max-h-12 overflow-y-auto">
-                                {Object.entries(p.distribucion_areas).map(([area, cant]) => (
-                                  <span key={area} className="text-[9px] bg-blue-50 border border-blue-200 text-blue-700 px-1.5 py-0.5 rounded font-medium truncate max-w-full">
-                                    <b>{cant}</b> {area}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-slate-400 italic">Almacén General</span>
-                            )}
-                          </div>
                         </div>
                       </div>
 
-                      {/* ACCIONES COMPACTAS */}
                       <div className="p-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <button onClick={() => { setProdEditar(p); setModalEditOpen(true); }} title="Editar" className="p-1.5 bg-white hover:bg-blue-50 text-blue-600 rounded border border-slate-200"><Edit2 className="w-3 h-3" /></button>
                           <button onClick={() => handleEliminarProducto(p.id, p.nombre)} title="Eliminar" className="p-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded border border-slate-200"><Trash2 className="w-3 h-3" /></button>
                         </div>
-                        <button 
-                          onClick={() => {
-                            setFormSalida(prev => ({ ...prev, producto_id: p.id, producto_nombre_seleccionado: `${p.codigo_interno} - ${p.nombre} (Stock: ${p.stock_actual} ${p.unidad_medida})` }));
-                            setModalSalidaOpen(true);
-                          }} 
-                          className="flex items-center gap-1 text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-semibold px-2 py-1 rounded transition shadow-xs"
-                        >
+                        <button onClick={() => {
+                          setFormSalida(prev => ({ ...prev, producto_id: p.id, producto_nombre_seleccionado: `${p.codigo_interno} - ${p.nombre} (Stock: ${p.stock_actual} ${p.unidad_medida})` }));
+                          setModalSalidaOpen(true);
+                        }} className="flex items-center gap-1 text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-semibold px-2 py-1 rounded transition shadow-xs">
                           <ArrowDownLeft className="w-3 h-3" /> Salida
                         </button>
                       </div>
@@ -589,7 +541,6 @@ export default function App() {
                   ))}
                 </div>
               ) : (
-                /* VISTA 2: TABLA CLÁSICA */
                 <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs text-left text-slate-700 min-w-[700px]">
@@ -599,7 +550,6 @@ export default function App() {
                           <th className="px-4 py-3.5">Código</th>
                           <th className="px-4 py-3.5">Artículo / Insumo</th>
                           <th className="px-4 py-3.5">Categoría</th>
-                          <th className="px-4 py-3.5">Asignación por Departamento / Área</th>
                           <th className="px-4 py-3.5 text-right">Existencia Total</th>
                           <th className="px-4 py-3.5 text-center">Acciones</th>
                         </tr>
@@ -619,19 +569,6 @@ export default function App() {
                             <td className="px-4 py-3 font-mono font-bold text-blue-600">{p.codigo_interno}</td>
                             <td className="px-4 py-3 font-bold text-slate-900 text-sm">{p.nombre}</td>
                             <td className="px-4 py-3 text-slate-600">{p.categoria_nombre}</td>
-                            <td className="px-4 py-3">
-                              {p.distribucion_areas && Object.keys(p.distribucion_areas).length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {Object.entries(p.distribucion_areas).map(([area, cant]) => (
-                                    <span key={area} className="text-[10px] bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
-                                      <b>{cant} {p.unidad_medida}</b> en {area}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 italic">En almacén general</span>
-                              )}
-                            </td>
                             <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">{p.stock_actual} <span className="text-[10px] font-normal text-slate-500">{p.unidad_medida}</span></td>
                             <td className="px-4 py-3 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-2">
@@ -647,7 +584,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* PAGINACIÓN */}
               <div className="px-6 py-4 bg-white border border-slate-200 rounded-2xl flex justify-between items-center text-xs shadow-xs">
                 <p className="text-slate-500">Página <b>{paginaActual}</b> de <b>{totalPaginas}</b> (Mostrando {elementosPorPagina} por página)</p>
                 <div className="flex items-center gap-2">
@@ -655,7 +591,6 @@ export default function App() {
                   <button disabled={paginaActual >= totalPaginas} onClick={() => setPaginaActual(prev => Math.min(prev + 1, totalPaginas))} className="p-2 bg-slate-100 disabled:opacity-30 rounded-xl text-slate-700 hover:bg-slate-200"><ChevronRight className="w-4 h-4" /></button>
                 </div>
               </div>
-
             </div>
           )}
 
@@ -664,53 +599,10 @@ export default function App() {
               <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex-wrap gap-3">
                 <div>
                   <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2"><Layers className="w-5 h-5 text-blue-600" /> Catálogo Maestro de Artículos</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Listado completo de artículos registrados en el sistema.</p>
                 </div>
                 <button onClick={() => setModalNuevoArticuloOpen(true)} className="flex items-center gap-2 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl transition shadow-sm">
                   <Plus className="w-4 h-4" /> Agregar al Catálogo
                 </button>
-              </div>
-
-              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left text-slate-700 min-w-[700px]">
-                    <thead className="text-[10px] uppercase bg-slate-100 text-slate-500 font-bold border-b border-slate-200">
-                      <tr>
-                        <th className="px-4 py-3 text-center w-14">Foto</th>
-                        <th className="px-4 py-3">Código</th>
-                        <th className="px-4 py-3">Nombre del Artículo</th>
-                        <th className="px-4 py-3">Categoría</th>
-                        <th className="px-4 py-3">Unidad de Medida</th>
-                        <th className="px-4 py-3 text-right">Stock Actual</th>
-                        <th className="px-4 py-3 text-center">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {productos.map(p => (
-                        <tr key={p.id} className="hover:bg-slate-50">
-                          <td className="px-4 py-2 text-center">
-                            {p.imagen_principal ? (
-                              <img onClick={() => setProductoZoom(p)} src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-9 h-9 object-cover rounded-xl border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition" title="Ver foto" />
-                            ) : (
-                              <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 mx-auto border"><ImageIcon className="w-3.5 h-3.5" /></div>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 font-mono font-bold text-blue-600">{p.codigo_interno}</td>
-                          <td className="px-4 py-2 font-bold text-slate-900">{p.nombre}</td>
-                          <td className="px-4 py-2 text-slate-600">{p.categoria_nombre}</td>
-                          <td className="px-4 py-2 text-slate-600 font-medium">{p.unidad_medida}</td>
-                          <td className="px-4 py-2 text-right font-black text-slate-900">{p.stock_actual}</td>
-                          <td className="px-4 py-2 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button onClick={() => { setProdEditar(p); setModalEditOpen(true); }} className="p-1.5 bg-slate-100 text-blue-600 rounded-lg border"><Edit2 className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => handleEliminarProducto(p.id, p.nombre)} className="p-1.5 bg-slate-100 text-rose-600 rounded-lg border"><Trash2 className="w-3.5 h-3.5" /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               </div>
             </div>
           )}
@@ -741,25 +633,6 @@ export default function App() {
                         <button onClick={() => handleEliminarArea(a.id, a.nombre)} className="p-2 text-rose-600 bg-rose-50 rounded-xl border border-rose-200"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sub-Áreas / Departamentos:</p>
-                      {a.subareas && a.subareas.length > 0 ? (
-                        <div className="space-y-2">
-                          {a.subareas.map((sub) => (
-                            <div key={sub.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex justify-between items-center">
-                              <div>
-                                <p className="text-xs font-bold text-slate-800">↳ {sub.nombre}</p>
-                                <p className="text-[11px] text-slate-500 mt-0.5">👤 {sub.encargado}</p>
-                              </div>
-                              <button onClick={() => handleEliminarSubArea(sub.id, sub.nombre)} className="p-1.5 text-rose-600 bg-rose-50 rounded-lg"><Trash2 className="w-3 h-3" /></button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-400 italic">Sin sub-áreas registradas.</p>
-                      )}
-                    </div>
                   </div>
                 ))}
               </div>
@@ -776,21 +649,6 @@ export default function App() {
                   <Plus className="w-4 h-4" /> Nueva Categoría
                 </button>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {categorias.map(c => (
-                  <div key={c.id} className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{c.nombre}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{c.descripcion || "Insumos generales"}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => { setCatEditar(c); setFormCat({ nombre: c.nombre, descripcion: c.descripcion || '' }); setModalCatOpen(true); }} className="p-2 text-blue-600 bg-blue-50 rounded-xl border border-slate-200"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleEliminarCategoria(c.id, c.nombre)} className="p-2 text-rose-600 bg-rose-50 rounded-xl border border-slate-200"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
@@ -799,40 +657,8 @@ export default function App() {
               <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
                 <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2"><History className="w-4 h-4 text-emerald-600" /> Kárdex con Registro de Hora Exacta</h2>
                 <button onClick={handleLimpiarKardex} className="flex items-center gap-1.5 text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3.5 py-2 rounded-xl transition shadow-sm">
-                  <Trash className="w-4 h-4" /> Limpiar Kárdex (Iniciar Pruebas Reales)
+                  <Trash className="w-4 h-4" /> Limpiar Kárdex
                 </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left text-slate-700 min-w-[700px]">
-                  <thead className="text-[10px] uppercase bg-slate-100 text-slate-500 font-bold border-b border-slate-200">
-                    <tr>
-                      <th className="px-4 py-3.5">Folio</th>
-                      <th className="px-4 py-3.5">Tipo</th>
-                      <th className="px-4 py-3.5">Fecha y Hora</th>
-                      <th className="px-4 py-3.5">Artículo</th>
-                      <th className="px-4 py-3.5 text-right">Cant.</th>
-                      <th className="px-4 py-3.5">Destino / Departamento</th>
-                      <th className="px-4 py-3.5">Recibió</th>
-                      <th className="px-4 py-3.5">Entregó</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {movimientos.map((m) => (
-                      <tr key={m.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-mono font-bold text-blue-600">{m.folio}</td>
-                        <td className="px-4 py-3">
-                          {m.tipo === 'ENTRADA' ? <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">+ ENTRADA</span> : <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">- SALIDA</span>}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-[11px] text-slate-600 font-bold">{m.fecha}</td>
-                        <td className="px-4 py-3 font-bold text-slate-900">{m.producto}</td>
-                        <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">{m.cantidad}</td>
-                        <td className="px-4 py-3 text-slate-700">{m.area || m.proveedor}</td>
-                        <td className="px-4 py-3 text-slate-500">{m.recibio}</td>
-                        <td className="px-4 py-3 text-slate-500">{m.entrego}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </div>
           )}
@@ -840,105 +666,7 @@ export default function App() {
         </main>
       </div>
 
-      {/* --- POP-UP / MODAL DE IMAGEN & DETALLE CHICO (NO EXAGERADO) --- */}
-      {productoZoom && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div>
-                <span className="text-[10px] font-mono font-bold text-blue-600 uppercase">{productoZoom.codigo_interno}</span>
-                <h3 className="text-sm font-bold text-slate-900 truncate max-w-[240px]">{productoZoom.nombre}</h3>
-              </div>
-              <button onClick={() => setProductoZoom(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg bg-slate-100"><X className="w-4 h-4" /></button>
-            </div>
-
-            {/* FOTO EN GRANDE (TAMAÑO MODERADO) */}
-            <div className="relative h-56 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
-              {productoZoom.imagen_principal ? (
-                <img src={`https://sistema-almacen-backend.onrender.com${productoZoom.imagen_principal}`} alt={productoZoom.nombre} className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-slate-400 space-y-1">
-                  <ImageIcon className="w-10 h-10 opacity-40" />
-                  <span className="text-xs">Sin fotografía disponible</span>
-                </div>
-              )}
-            </div>
-
-            {/* DETALLES RÁPIDOS */}
-            <div className="space-y-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Categoría:</span>
-                <span className="font-bold text-slate-800">{productoZoom.categoria_nombre}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Stock Total:</span>
-                <span className="font-black text-emerald-700">{productoZoom.stock_actual} {productoZoom.unidad_medida}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-1">
-              <button onClick={() => setProductoZoom(null)} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm">
-                Cerrar Ventana
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL 1: NUEVO ARTÍCULO EN CATÁLOGO --- */}
-      {modalNuevoArticuloOpen && (
-        <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2"><Layers className="w-5 h-5 text-blue-600" /> Nuevo Artículo en Catálogo</h3>
-              <button onClick={() => setModalNuevoArticuloOpen(false)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl bg-slate-100"><X className="w-5 h-5" /></button>
-            </div>
-            
-            <form onSubmit={handleCrearArticuloCatalogo} className="flex flex-col space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Código Interno</label>
-                <input type="text" placeholder="Ej: CLOR-01" value={formNuevoArticulo.codigo_interno} onChange={e => setFormNuevoArticulo({...formNuevoArticulo, codigo_interno: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Categoría</label>
-                <select value={formNuevoArticulo.categoria_id} onChange={e => setFormNuevoArticulo({...formNuevoArticulo, categoria_id: e.target.value})} className="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl p-2.5 outline-none">
-                  {categorias.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Nombre del Artículo</label>
-                <input type="text" required placeholder="Cloro, Pintura..." value={formNuevoArticulo.nombre} onChange={e => setFormNuevoArticulo({...formNuevoArticulo, nombre: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Unidad de Medida</label>
-                <select value={formNuevoArticulo.unidad_medida} onChange={e => setFormNuevoArticulo({...formNuevoArticulo, unidad_medida: e.target.value})} className="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl p-2.5 outline-none">
-                  <option value="Pieza">Pieza(s)</option>
-                  <option value="Tibor">Tibor(es)</option>
-                  <option value="Cubeta">Cubeta(s)</option>
-                  <option value="Bidón">Bidón(es)</option>
-                  <option value="Bulto">Bulto(s)</option>
-                  <option value="Kg">Kilogramos (Kg)</option>
-                  <option value="Tonelada">Tonelada(s)</option>
-                  <option value="Litro">Litro(s)</option>
-                  <option value="Metro">Metro(s)</option>
-                  <option value="Caja">Caja(s)</option>
-                  <option value="Paquete">Paquete(s)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Fotografía (Opcional)</label>
-                <input type="file" accept="image/*" onChange={e => setFormNuevoArticulo({...formNuevoArticulo, imagen: e.target.files ? e.target.files[0] : null})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-slate-600 text-xs" />
-              </div>
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200">
-                <button type="button" onClick={() => setModalNuevoArticuloOpen(false)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancelar</button>
-                <button type="submit" className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm">Guardar en Catálogo</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL 2: REGISTRAR ENTRADA --- */}
+      {/* MODAL ENTRADA (LIMPIO Y EN BLANCO) */}
       {modalEntradaOpen && (
         <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
@@ -948,7 +676,6 @@ export default function App() {
             </div>
             
             <form onSubmit={handleGuardarEntrada} className="flex flex-col space-y-3 text-xs">
-              
               <div>
                 <label className="block text-slate-700 mb-1 font-semibold">Código Interno</label>
                 <input type="text" placeholder="Ej: CLOR-01" value={formEntrada.codigo_interno} onChange={e => setFormEntrada({...formEntrada, codigo_interno: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 focus:outline-none font-mono font-bold" />
@@ -956,38 +683,26 @@ export default function App() {
 
               <div className="relative space-y-1" ref={dropdownEntradaRef}>
                 <label className="block text-slate-700 font-semibold">Buscar o Escribir Artículo</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Escribe para buscar existente o crear nuevo..." 
-                  value={formEntrada.nombre} 
-                  onChange={e => {
-                    setFormEntrada({...formEntrada, nombre: e.target.value});
-                    setBusquedaEntrada(e.target.value);
-                    setMostrarDropdownEntrada(true);
-                  }}
-                  onFocus={() => setMostrarDropdownEntrada(true)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 font-bold focus:outline-none" 
-                />
+                <input type="text" required placeholder="Escribe para buscar existente o crear nuevo..." value={formEntrada.nombre} onChange={e => {
+                  setFormEntrada({...formEntrada, nombre: e.target.value});
+                  setBusquedaEntrada(e.target.value);
+                  setMostrarDropdownEntrada(true);
+                }} onFocus={() => setMostrarDropdownEntrada(true)} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 font-bold focus:outline-none" />
 
                 {mostrarDropdownEntrada && busquedaEntrada.trim() !== '' && productosEntradaFiltrados.length > 0 && (
                   <div className="absolute left-0 right-0 top-16 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100">
                     {productosEntradaFiltrados.map(p => (
-                      <div 
-                        key={p.id}
-                        onClick={() => {
-                          setFormEntrada({
-                            ...formEntrada,
-                            codigo_interno: p.codigo_interno,
-                            nombre: p.nombre,
-                            categoria_id: String(p.categoria_id),
-                            unidad_medida: p.unidad_medida
-                          });
-                          setBusquedaEntrada('');
-                          setMostrarDropdownEntrada(false);
-                        }}
-                        className="p-2.5 hover:bg-blue-50 cursor-pointer text-xs text-slate-800 transition flex items-center justify-between"
-                      >
+                      <div key={p.id} onClick={() => {
+                        setFormEntrada({
+                          ...formEntrada,
+                          codigo_interno: p.codigo_interno,
+                          nombre: p.nombre,
+                          categoria_id: String(p.categoria_id),
+                          unidad_medida: p.unidad_medida
+                        });
+                        setBusquedaEntrada('');
+                        setMostrarDropdownEntrada(false);
+                      }} className="p-2.5 hover:bg-blue-50 cursor-pointer text-xs text-slate-800 transition flex items-center justify-between">
                         <div>
                           <span className="font-mono font-black text-blue-600 block text-[11px]">{p.codigo_interno}</span>
                           <span className="font-bold text-slate-900">{p.nombre}</span>
@@ -1009,7 +724,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 mb-1 font-semibold">Cantidad a Ingresar</label>
-                  <input type="number" min="1" required value={formEntrada.cantidad} onChange={e => setFormEntrada({...formEntrada, cantidad: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 font-bold focus:outline-none" />
+                  <input type="number" min="0" required value={formEntrada.cantidad} onChange={e => setFormEntrada({...formEntrada, cantidad: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 font-bold focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-slate-700 mb-1 font-semibold">Unidad de Medida</label>
@@ -1031,7 +746,8 @@ export default function App() {
 
               <div>
                 <label className="block text-slate-700 mb-1 font-semibold">¿Para qué Departamento / Área es este material?</label>
-                <select value={formEntrada.area_id} onChange={e => setFormEntrada({...formEntrada, area_id: e.target.value})} className="w-full bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-xl p-2.5 outline-none">
+                <select required value={formEntrada.area_id} onChange={e => setFormEntrada({...formEntrada, area_id: e.target.value})} className="w-full bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-xl p-2.5 outline-none">
+                  <option value="" disabled>-- Selecciona un área o departamento --</option>
                   {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                 </select>
               </div>
@@ -1057,55 +773,7 @@ export default function App() {
         </div>
       )}
 
-      {/* --- MODAL EDITAR ARTÍCULO --- */}
-      {modalEditOpen && prodEditar && (
-        <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2"><Edit2 className="w-5 h-5 text-blue-600" /> Editar Artículo</h3>
-              <button onClick={() => setModalEditOpen(false)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl bg-slate-100"><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={handleActualizarProducto} className="flex flex-col space-y-3.5 text-xs">
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Código Interno</label>
-                <input type="text" value={prodEditar.codigo_interno} onChange={e => setProdEditar({...prodEditar, codigo_interno: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Nombre del Artículo</label>
-                <input type="text" required value={prodEditar.nombre} onChange={e => setProdEditar({...prodEditar, nombre: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:outline-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 mb-1 font-semibold">Existencia / Stock</label>
-                  <input type="number" required value={prodEditar.stock_actual} onChange={e => setProdEditar({...prodEditar, stock_actual: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:outline-none font-bold" />
-                </div>
-                <div>
-                  <label className="block text-slate-700 mb-1 font-semibold">Unidad de Medida</label>
-                  <select value={prodEditar.unidad_medida} onChange={e => setProdEditar({...prodEditar, unidad_medida: e.target.value})} className="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl p-3 outline-none">
-                    <option value="Pieza">Pieza(s)</option>
-                    <option value="Tibor">Tibor(es)</option>
-                    <option value="Cubeta">Cubeta(s)</option>
-                    <option value="Bidón">Bidón(es)</option>
-                    <option value="Bulto">Bulto(s)</option>
-                    <option value="Kg">Kilogramos (Kg)</option>
-                    <option value="Tonelada">Tonelada(s)</option>
-                    <option value="Litro">Litro(s)</option>
-                    <option value="Metro">Metro(s)</option>
-                    <option value="Caja">Caja(s)</option>
-                    <option value="Paquete">Paquete(s)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-200">
-                <button type="button" onClick={() => setModalEditOpen(false)} className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancelar</button>
-                <button type="submit" className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm">Guardar Cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL SALIDA --- */}
+      {/* MODAL SALIDA (LIMPIO Y EN BLANCO) */}
       {modalSalidaOpen && (
         <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
@@ -1122,42 +790,32 @@ export default function App() {
 
               <div>
                 <label className="block text-slate-700 mb-1 font-semibold">Quién Solicita (Dirección / Área)</label>
-                <select value={formSalida.area_id} onChange={e => setFormSalida({...formSalida, area_id: e.target.value, subarea_id: ''})} className="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl p-3 outline-none">
+                <select required value={formSalida.area_id} onChange={e => setFormSalida({...formSalida, area_id: e.target.value, subarea_id: ''})} className="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl p-3 outline-none">
+                  <option value="" disabled>-- Selecciona un área o departamento --</option>
                   {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                 </select>
               </div>
 
               <div className="relative space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-300" ref={dropdownSalidaRef}>
                 <label className="block text-slate-700 font-semibold">Artículo / Insumo (Búsqueda Rápida)</label>
-                <input 
-                  type="text" 
-                  placeholder="Escribe el nombre o código..." 
-                  value={formSalida.producto_nombre_seleccionado || busquedaProductoSalida} 
-                  onChange={e => {
-                    setBusquedaProductoSalida(e.target.value);
-                    setFormSalida({...formSalida, producto_nombre_seleccionado: '', producto_id: ''});
-                    setMostrarDropdownSalida(true);
-                  }}
-                  onFocus={() => setMostrarDropdownSalida(true)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 text-xs focus:outline-none font-bold" 
-                />
+                <input type="text" placeholder="Escribe el nombre o código..." value={formSalida.producto_nombre_seleccionado || busquedaProductoSalida} onChange={e => {
+                  setBusquedaProductoSalida(e.target.value);
+                  setFormSalida({...formSalida, producto_nombre_seleccionado: '', producto_id: ''});
+                  setMostrarDropdownSalida(true);
+                }} onFocus={() => setMostrarDropdownSalida(true)} className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 text-xs focus:outline-none font-bold" />
 
                 {mostrarDropdownSalida && (
                   <div className="absolute left-3 right-3 top-16 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100">
                     {productosSalidaFiltrados.map(p => (
-                      <div 
-                        key={p.id}
-                        onClick={() => {
-                          setFormSalida({
-                            ...formSalida, 
-                            producto_id: p.id, 
-                            producto_nombre_seleccionado: `${p.codigo_interno} - ${p.nombre} (Stock: ${p.stock_actual} ${p.unidad_medida})`
-                          });
-                          setBusquedaProductoSalida('');
-                          setMostrarDropdownSalida(false);
-                        }}
-                        className="p-2.5 hover:bg-amber-50 cursor-pointer text-xs text-slate-800 transition flex items-center justify-between"
-                      >
+                      <div key={p.id} onClick={() => {
+                        setFormSalida({
+                          ...formSalida, 
+                          producto_id: p.id, 
+                          producto_nombre_seleccionado: `${p.codigo_interno} - ${p.nombre} (Stock: ${p.stock_actual} ${p.unidad_medida})`
+                        });
+                        setBusquedaProductoSalida('');
+                        setMostrarDropdownSalida(false);
+                      }} className="p-2.5 hover:bg-amber-50 cursor-pointer text-xs text-slate-800 transition flex items-center justify-between">
                         <div>
                           <span className="font-mono font-black text-amber-700 block text-[11px]">{p.codigo_interno}</span>
                           <span className="font-bold text-slate-900">{p.nombre}</span>
@@ -1171,7 +829,7 @@ export default function App() {
 
               <div>
                 <label className="block text-slate-700 mb-1 font-semibold">Cantidad a Entregar</label>
-                <input type="number" min="1" required value={formSalida.cantidad} onChange={e => setFormSalida({...formSalida, cantidad: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:outline-none" />
+                <input type="number" min="0" required value={formSalida.cantidad} onChange={e => setFormSalida({...formSalida, cantidad: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:outline-none" />
               </div>
 
               <div>
@@ -1198,57 +856,33 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL CATEGORÍA */}
-      {modalCatOpen && (
-        <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">{catEditar ? "Editar Categoría" : "Nueva Categoría"}</h3>
-            <form onSubmit={handleGuardarCategoria} className="space-y-3 text-xs">
+      {/* POP-UP ZOOM IMAGEN */}
+      {productoZoom && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Nombre de la Categoría</label>
-                <input type="text" required placeholder="Ej: Materiales Eléctricos..." value={formCat.nombre} onChange={e => setFormCat({...formCat, nombre: e.target.value})} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-300 text-slate-900" />
+                <span className="text-[10px] font-mono font-bold text-blue-600 uppercase">{productoZoom.codigo_interno}</span>
+                <h3 className="text-sm font-bold text-slate-900 truncate max-w-[240px]">{productoZoom.nombre}</h3>
               </div>
-              <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Descripción</label>
-                <input type="text" placeholder="Breve descripción..." value={formCat.descripcion} onChange={e => setFormCat({...formCat, descripcion: e.target.value})} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-300 text-slate-900" />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => { setModalCatOpen(false); setCatEditar(null); }} className="px-4 py-2 bg-slate-100 rounded-xl font-semibold">Cancelar</button>
-                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold">Guardar</button>
-              </div>
-            </form>
+              <button onClick={() => setProductoZoom(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg bg-slate-100"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="relative h-56 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
+              {productoZoom.imagen_principal ? (
+                <img src={`https://sistema-almacen-backend.onrender.com${productoZoom.imagen_principal}`} alt={productoZoom.nombre} className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400 space-y-1">
+                  <ImageIcon className="w-10 h-10 opacity-40" />
+                  <span className="text-xs">Sin fotografía disponible</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-1">
+              <button onClick={() => setProductoZoom(null)} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm">Cerrar Ventana</button>
+            </div>
           </div>
         </div>
       )}
-
-      {/* MODAL ÁREA */}
-      {modalAreaOpen && (
-        <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Nueva Dirección / Área</h3>
-            <form onSubmit={handleGuardarArea} className="space-y-3 text-xs">
-              <input type="text" required placeholder="Nombre del Área..." value={formArea.nombre} onChange={e => setFormArea({...formArea, nombre: e.target.value})} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-300 text-slate-900" />
-              <input type="text" required placeholder="Encargado..." value={formArea.encargado} onChange={e => setFormArea({...formArea, encargado: e.target.value})} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-300 text-slate-900" />
-              <div className="flex justify-end gap-2"><button type="button" onClick={() => setModalAreaOpen(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-semibold">Cancelar</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold">Guardar</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL SUBÁREA */}
-      {modalSubAreaOpen && (
-        <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Nueva Sub-Área</h3>
-            <form onSubmit={handleGuardarSubArea} className="space-y-3 text-xs">
-              <input type="text" required placeholder="Nombre..." value={formSubArea.nombre} onChange={e => setFormSubArea({...formSubArea, nombre: e.target.value})} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-300 text-slate-900" />
-              <input type="text" required placeholder="Encargado..." value={formSubArea.encargado} onChange={e => setFormSubArea({...formSubArea, encargado: e.target.value})} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-300 text-slate-900" />
-              <div className="flex justify-end gap-2"><button type="button" onClick={() => setModalSubAreaOpen(null)} className="px-4 py-2 bg-slate-100 rounded-xl font-semibold">Cancelar</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold">Guardar</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
