@@ -63,7 +63,7 @@ export default function App() {
    
   const [modalCatOpen, setModalCatOpen] = useState(false);
   const [catEditar, setCatEditar] = useState<Categoria | null>(null);
-  const [prodEditar, setProdEditar] = useState<Producto | null>(null);
+  const [prodEditar, setProdEditar] = useState<any | null>(null);
 
   const [formNuevoArticulo, setFormNuevoArticulo] = useState({
     codigo_interno: '',
@@ -92,7 +92,7 @@ export default function App() {
 
   const [formSalida, setFormSalida] = useState({
     folio: '', 
-    area_id: '', 
+    area_id: '', // En blanco por defecto como solicitaste
     subarea_id: '', 
     producto_id: '', 
     producto_nombre_seleccionado: '',
@@ -141,18 +141,6 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLimpiarKardex = async () => {
-    if (confirm("⚠️ ¿Estás seguro de limpiar todo el Kárdex y movimientos de prueba?")) {
-      try {
-        const res = await axios.delete('https://sistema-almacen-backend.onrender.com/api/v1/movimientos/limpiar');
-        alert(`✨ ${res.data.message}`);
-        cargarDatos();
-      } catch (err) {
-        alert("Error al limpiar el kárdex");
-      }
-    }
-  };
-
   const handleGuardarEntrada = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formEntrada.area_id) {
@@ -195,7 +183,8 @@ export default function App() {
         codigo_interno: prodEditar.codigo_interno,
         nombre: prodEditar.nombre,
         stock_actual: prodEditar.stock_actual,
-        unidad_medida: prodEditar.unidad_medida
+        unidad_medida: prodEditar.unidad_medida,
+        area_id: prodEditar.area_id || undefined
       });
       alert("✨ Artículo actualizado correctamente");
       setModalEditOpen(false);
@@ -434,12 +423,30 @@ export default function App() {
                               {p.stock_actual} {p.unidad_medida}
                             </span>
                           </div>
+
+                          <div className="space-y-1 pt-1">
+                            {p.distribucion_areas && Object.entries(p.distribucion_areas)
+                              .filter(([_, cant]) => cant > 0)
+                              .slice(0, 1)
+                              .map(([areaName, cant]) => (
+                                <div key={areaName} className="text-[10px] bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg flex items-center justify-between text-slate-700">
+                                  <span className="font-bold text-blue-600">{cant}</span>
+                                  <span className="truncate ml-1">{areaName}</span>
+                                </div>
+                              ))
+                            }
+                          </div>
                         </div>
                       </div>
 
                       <div className="p-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => { setProdEditar(p); setModalEditOpen(true); }} title="Editar" className="p-1.5 bg-white hover:bg-blue-50 text-blue-600 rounded border border-slate-200"><Edit2 className="w-3 h-3" /></button>
+                          <button onClick={() => { 
+                            const areaActualNombre = p.distribucion_areas ? Object.keys(p.distribucion_areas).find(k => p.distribucion_areas![k] > 0) : '';
+                            const areaEncontrada = areas.find(a => a.nombre === areaActualNombre);
+                            setProdEditar({ ...p, area_id: areaEncontrada ? String(areaEncontrada.id) : '' });
+                            setModalEditOpen(true); 
+                          }} title="Editar" className="p-1.5 bg-white hover:bg-blue-50 text-blue-600 rounded border border-slate-200"><Edit2 className="w-3 h-3" /></button>
                           <button onClick={() => handleEliminarProducto(p.id, p.nombre)} title="Eliminar" className="p-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded border border-slate-200"><Trash2 className="w-3 h-3" /></button>
                         </div>
                         <button onClick={() => {
@@ -484,7 +491,12 @@ export default function App() {
                             <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">{p.stock_actual} <span className="text-[10px] font-normal text-slate-500">{p.unidad_medida}</span></td>
                             <td className="px-4 py-3 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-2">
-                                <button onClick={() => { setProdEditar(p); setModalEditOpen(true); }} title="Editar" className="p-2 bg-slate-100 hover:bg-blue-50 text-blue-600 rounded-xl transition border border-slate-200"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => { 
+                                  const areaActualNombre = p.distribucion_areas ? Object.keys(p.distribucion_areas).find(k => p.distribucion_areas![k] > 0) : '';
+                                  const areaEncontrada = areas.find(a => a.nombre === areaActualNombre);
+                                  setProdEditar({ ...p, area_id: areaEncontrada ? String(areaEncontrada.id) : '' });
+                                  setModalEditOpen(true); 
+                                }} title="Editar" className="p-2 bg-slate-100 hover:bg-blue-50 text-blue-600 rounded-xl transition border border-slate-200"><Edit2 className="w-3.5 h-3.5" /></button>
                                 <button onClick={() => handleEliminarProducto(p.id, p.nombre)} title="Eliminar" className="p-2 bg-slate-100 hover:bg-rose-50 text-rose-600 rounded-xl transition border border-slate-200"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
                             </td>
@@ -507,6 +519,66 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* MODAL EDITAR ARTÍCULO CON ÁREA */}
+      {modalEditOpen && prodEditar && (
+        <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2"><Edit2 className="w-5 h-5 text-blue-600" /> Editar Artículo</h3>
+              <button onClick={() => setModalEditOpen(false)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl bg-slate-100"><X className="w-5 h-5" /></button>
+            </div>
+            
+            <form onSubmit={handleActualizarProducto} className="flex flex-col space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 mb-1 font-semibold">Código Interno</label>
+                <input type="text" value={prodEditar.codigo_interno} onChange={e => setProdEditar({...prodEditar, codigo_interno: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 font-mono font-bold focus:outline-none" />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1 font-semibold">Nombre del Artículo</label>
+                <input type="text" required value={prodEditar.nombre} onChange={e => setProdEditar({...prodEditar, nombre: e.target.value})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 font-bold focus:outline-none" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Existencia / Stock</label>
+                  <input type="number" min="0" required value={prodEditar.stock_actual} onChange={e => setProdEditar({...prodEditar, stock_actual: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 font-bold focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Unidad de Medida</label>
+                  <select value={prodEditar.unidad_medida} onChange={e => setProdEditar({...prodEditar, unidad_medida: e.target.value})} className="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl p-2.5 outline-none">
+                    <option value="Pieza">Pieza(s)</option>
+                    <option value="Tibor">Tibor(es)</option>
+                    <option value="Cubeta">Cubeta(s)</option>
+                    <option value="Bidón">Bidón(es)</option>
+                    <option value="Bulto">Bulto(s)</option>
+                    <option value="Kg">Kilogramos (Kg)</option>
+                    <option value="Tonelada">Tonelada(s)</option>
+                    <option value="Litro">Litro(s)</option>
+                    <option value="Metro">Metro(s)</option>
+                    <option value="Caja">Caja(s)</option>
+                    <option value="Paquete">Paquete(s)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1 font-semibold">Dirección / Área Asignada</label>
+                <select value={prodEditar.area_id || ''} onChange={e => setProdEditar({...prodEditar, area_id: e.target.value})} className="w-full bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-xl p-2.5 outline-none">
+                  <option value="" disabled>-- Selecciona un área o departamento --</option>
+                  {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200">
+                <button type="button" onClick={() => setModalEditOpen(false)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancelar</button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm">Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL ENTRADA */}
       {modalEntradaOpen && (
@@ -615,7 +687,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL SALIDA */}
+      {/* MODAL SALIDA (DIRECCIÓN EN BLANCO POR DEFECTO) */}
       {modalSalidaOpen && (
         <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
