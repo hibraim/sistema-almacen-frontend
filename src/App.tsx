@@ -252,6 +252,12 @@ export default function App() {
 
   const prodsFiltrados = productos.map(p => {
     const query = busqueda.toLowerCase().trim();
+
+    if (areaReporte !== 'TODAS') {
+      const tieneArea = p.distribucion_areas && p.distribucion_areas[areaReporte] > 0;
+      if (!tieneArea) return null;
+    }
+
     if (!query) return p;
 
     const nombreMatch = p.nombre.toLowerCase().includes(query);
@@ -259,6 +265,17 @@ export default function App() {
     const categoriaMatch = p.categoria_nombre.toLowerCase().includes(query);
 
     if (nombreMatch || codigoMatch || categoriaMatch) return p;
+
+    if (p.distribucion_areas) {
+      let coincideAreaQuery = false;
+      for (const [areaName] of Object.entries(p.distribucion_areas)) {
+        if (areaName.toLowerCase().includes(query)) {
+          coincideAreaQuery = true;
+        }
+      }
+      if (coincideAreaQuery) return p;
+    }
+
     return null;
   }).filter(Boolean) as Producto[];
 
@@ -386,52 +403,105 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {prodsPaginados.map((p) => (
-                  <div key={p.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
-                    <div>
-                      <div onClick={() => setProductoZoom(p)} title="Clic para ver detalle" className="relative h-28 bg-slate-100 border-b border-slate-100 flex items-center justify-center overflow-hidden cursor-pointer group">
-                        {p.imagen_principal ? (
-                          <img src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-slate-400 space-y-1">
-                            <ImageIcon className="w-7 h-7 opacity-40" />
-                            <span className="text-[9px]">Sin foto</span>
+              {vistaModo === 'tarjetas' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                  {prodsPaginados.map((p) => (
+                    <div key={p.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
+                      <div>
+                        <div onClick={() => setProductoZoom(p)} title="Clic para ver detalle" className="relative h-28 bg-slate-100 border-b border-slate-100 flex items-center justify-center overflow-hidden cursor-pointer group">
+                          {p.imagen_principal ? (
+                            <img src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center text-slate-400 space-y-1">
+                              <ImageIcon className="w-7 h-7 opacity-40" />
+                              <span className="text-[9px]">Sin foto</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">
+                            <ZoomIn className="w-5 h-5 drop-shadow" />
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">
-                          <ZoomIn className="w-5 h-5 drop-shadow" />
+                          <div className="absolute top-2 left-2 bg-slate-900/80 text-white text-[9px] font-mono font-bold px-2 py-0.5 rounded pointer-events-none">
+                            {p.codigo_interno}
+                          </div>
                         </div>
-                        <div className="absolute top-2 left-2 bg-slate-900/80 text-white text-[9px] font-mono font-bold px-2 py-0.5 rounded pointer-events-none">
-                          {p.codigo_interno}
+
+                        <div className="p-3 space-y-2">
+                          <h3 className="text-xs font-bold text-slate-900 line-clamp-2 leading-tight">{p.nombre}</h3>
+                          
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400 font-medium uppercase text-[9px]">Stock:</span>
+                            <span className={`font-black px-2 py-0.5 rounded text-[10px] ${p.stock_actual > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                              {p.stock_actual} {p.unidad_medida}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="p-3 space-y-2">
-                        <h3 className="text-xs font-bold text-slate-900 line-clamp-2 leading-tight">{p.nombre}</h3>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400 font-medium uppercase text-[9px]">Stock:</span>
-                          <span className={`font-black px-2 py-0.5 rounded text-[10px] ${p.stock_actual > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                            {p.stock_actual} {p.unidad_medida}
-                          </span>
+                      <div className="p-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => { setProdEditar(p); setModalEditOpen(true); }} title="Editar" className="p-1.5 bg-white hover:bg-blue-50 text-blue-600 rounded border border-slate-200"><Edit2 className="w-3 h-3" /></button>
+                          <button onClick={() => handleEliminarProducto(p.id, p.nombre)} title="Eliminar" className="p-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded border border-slate-200"><Trash2 className="w-3 h-3" /></button>
                         </div>
+                        <button onClick={() => {
+                          setFormSalida(prev => ({ ...prev, producto_id: p.id, producto_nombre_seleccionado: `${p.codigo_interno} - ${p.nombre} (Stock: ${p.stock_actual} ${p.unidad_medida})` }));
+                          setModalSalidaOpen(true);
+                        }} className="flex items-center gap-1 text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-semibold px-2 py-1 rounded transition shadow-xs">
+                          <ArrowDownLeft className="w-3 h-3" /> Salida
+                        </button>
                       </div>
                     </div>
-
-                    <div className="p-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => { setProdEditar(p); setModalEditOpen(true); }} title="Editar" className="p-1.5 bg-white hover:bg-blue-50 text-blue-600 rounded border border-slate-200"><Edit2 className="w-3 h-3" /></button>
-                        <button onClick={() => handleEliminarProducto(p.id, p.nombre)} title="Eliminar" className="p-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded border border-slate-200"><Trash2 className="w-3 h-3" /></button>
-                      </div>
-                      <button onClick={() => {
-                        setFormSalida(prev => ({ ...prev, producto_id: p.id, producto_nombre_seleccionado: `${p.codigo_interno} - ${p.nombre} (Stock: ${p.stock_actual} ${p.unidad_medida})` }));
-                        setModalSalidaOpen(true);
-                      }} className="flex items-center gap-1 text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-semibold px-2 py-1 rounded transition shadow-xs">
-                        <ArrowDownLeft className="w-3 h-3" /> Salida
-                      </button>
-                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left text-slate-700 min-w-[700px]">
+                      <thead className="text-[10px] uppercase bg-slate-100 text-slate-500 font-bold border-b border-slate-200">
+                        <tr>
+                          <th className="px-4 py-3.5 text-center w-14">Foto</th>
+                          <th className="px-4 py-3.5">Código</th>
+                          <th className="px-4 py-3.5">Artículo / Insumo</th>
+                          <th className="px-4 py-3.5">Categoría</th>
+                          <th className="px-4 py-3.5 text-right">Existencia Total</th>
+                          <th className="px-4 py-3.5 text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {prodsPaginados.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-50/80 transition duration-150">
+                            <td className="px-4 py-3 text-center">
+                              {p.imagen_principal ? (
+                                <img onClick={() => setProductoZoom(p)} src={`https://sistema-almacen-backend.onrender.com${p.imagen_principal}`} alt={p.nombre} className="w-10 h-10 object-cover rounded-xl border border-slate-200 mx-auto shadow-xs cursor-pointer hover:scale-110 transition" title="Ver foto" />
+                              ) : (
+                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 mx-auto border border-slate-200">
+                                  <ImageIcon className="w-4 h-4" />
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-mono font-bold text-blue-600">{p.codigo_interno}</td>
+                            <td className="px-4 py-3 font-bold text-slate-900 text-sm">{p.nombre}</td>
+                            <td className="px-4 py-3 text-slate-600">{p.categoria_nombre}</td>
+                            <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">{p.stock_actual} <span className="text-[10px] font-normal text-slate-500">{p.unidad_medida}</span></td>
+                            <td className="px-4 py-3 text-center whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => { setProdEditar(p); setModalEditOpen(true); }} title="Editar" className="p-2 bg-slate-100 hover:bg-blue-50 text-blue-600 rounded-xl transition border border-slate-200"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => handleEliminarProducto(p.id, p.nombre)} title="Eliminar" className="p-2 bg-slate-100 hover:bg-rose-50 text-rose-600 rounded-xl transition border border-slate-200"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
+                </div>
+              )}
+
+              <div className="px-6 py-4 bg-white border border-slate-200 rounded-2xl flex justify-between items-center text-xs shadow-xs">
+                <p className="text-slate-500">Página <b>{paginaActual}</b> de <b>{totalPaginas}</b> (Mostrando {elementosPorPagina} por página)</p>
+                <div className="flex items-center gap-2">
+                  <button disabled={paginaActual === 1} onClick={() => setPaginaActual(prev => Math.max(prev - 1, 1))} className="p-2 bg-slate-100 disabled:opacity-30 rounded-xl text-slate-700 hover:bg-slate-200"><ChevronLeft className="w-4 h-4" /></button>
+                  <button disabled={paginaActual >= totalPaginas} onClick={() => setPaginaActual(prev => Math.min(prev + 1, totalPaginas))} className="p-2 bg-slate-100 disabled:opacity-30 rounded-xl text-slate-700 hover:bg-slate-200"><ChevronRight className="w-4 h-4" /></button>
+                </div>
               </div>
             </div>
           )}
