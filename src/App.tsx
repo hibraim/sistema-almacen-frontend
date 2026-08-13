@@ -434,20 +434,6 @@ export default function App() {
                               {p.stock_actual} {p.unidad_medida}
                             </span>
                           </div>
-
-                          {/* DISTRIBUCIÓN POR ÁREAS (LIMPIO: SOLO > 0 Y MÁXIMO 1) */}
-                          <div className="space-y-1 pt-1">
-                            {p.distribucion_areas && Object.entries(p.distribucion_areas)
-                              .filter(([_, cant]) => cant > 0)
-                              .slice(0, 1)
-                              .map(([areaName, cant]) => (
-                                <div key={areaName} className="text-[10px] bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg flex items-center justify-between text-slate-700">
-                                  <span className="font-bold text-blue-600">{cant}</span>
-                                  <span className="truncate ml-1">{areaName}</span>
-                                </div>
-                              ))
-                            }
-                          </div>
                         </div>
                       </div>
 
